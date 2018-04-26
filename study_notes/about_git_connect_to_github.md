@@ -1,10 +1,9 @@
-#How to use GIT connect to github
-  
-
 >Author:AD1986
+>  
 >Date:20180426
-  
 
+
+#How to use GIT connect to github
 ##0x01 Main reference
   
 
