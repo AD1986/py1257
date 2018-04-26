@@ -1,8 +1,3 @@
->Author:AD1986
->  
->Date:20180426
-
-
 #How to use GIT connect to github
 ##0x01 Main reference
   
@@ -31,3 +26,8 @@
 4. git remote add github + 远程仓库地址 //链接远程仓库，创建主分支
 5. git pull github master --allow-unrelated-histories  // 把本地仓库的变化连接到远程仓库主分支
 6. git push -u github master //把本地仓库的文件推送到远程仓库
+  
+>Author:AD1986
+>  
+>Date:20180426
+
