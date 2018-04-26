@@ -1,13 +1,17 @@
 #How to use GIT connect to github
+  
 
 >Author:AD1986
 >Date:20180426
+  
 
 ##0x01 Main reference
+  
 
 [廖雪峰的bolg关于GIT的笔记](https://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000)
 
 ## 0x02 Solved the problem of "Updates were rejected"
+  
 在学习廖雪峰的bolg关于GIT的笔记相关内容，实践时会发现因为GIT版本不同导致shell命令差异，执行"git push -u github master"时出现错误。
   
 详述如下：
