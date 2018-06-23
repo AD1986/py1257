@@ -139,7 +139,7 @@ django使用的默认数据库为sqlite3， 在二级目录下的setting.py中�
   
 	python manage.py startapp myApp
   
-该指令正常执行后，将在一级目录 first\_demo中生成 myApp目录。二级目录myApp中包含了一个名为 migrations 的文件夹与六个文件。
+该指令正常执行后，将在一级目录 first\_demo中生成 myApp目录。二级目录 myApp 中包含了一个名为 migrations 的文件夹与六个文件。
   
 * \_\_init__.py，同样的，这是一个空文件，它告诉python此目录可以被视为一个python包；
 * admin.py，站点配置文件；
@@ -335,13 +335,13 @@ django使用的默认数据库为sqlite3， 在二级目录下的setting.py中�
   
 依次输入用户名、邮箱、密码。
   
-之后，检查二级目录下的setting.py配置文件，确认配置项 INSTALLED_APPS 中存在"django.contrib.admin"。
+之后，检查二级目录下的 setting.py 配置文件，确认配置项 INSTALLED_APPS 中存在"django.contrib.admin"。
   
 启动web服务器，"ip"默认为本机地址，端口号默认为"8000"：
   
 	python manage.py runserver <ip:port>
   
-事实上，此web服务器是纯python构建的轻量级web服务器，仅适用于开发测试阶段。
+事实上，此web服务器是纯python构建的轻量级web服务器，仅适用于开发测试阶段。另外，停止服务需要使用 "crtl + c"。
   
 访问以下 url，最终进入管理后台：
   
@@ -349,6 +349,128 @@ django使用的默认数据库为sqlite3， 在二级目录下的setting.py中�
   
 ### 利用后台维护数据库
   
-
+首先，需要将"班级表"和"学生表"添加到admin用户后台可视化页面中，需要配置二级目录 myApp 目录下 admin.py, 配置完成后刷新web界面即可。
   
-### 公告访问
+	from .models import Grade,Student
+	admin.site.register(Grade)
+	admin.site.register(Student)
+  
+重写"班级表"的展示页面，需要进一步配置二级目录 myApp 目录下 admin.py。
+  
+	class GradeAdmin(admin.ModelAdmin):
+	    # 列表页面属性
+	    list_display = ['pk', 'g_name', 'g_date', 'g_girl_num', 'g_boy_num', 'is_delete']
+	    list_filter = ['g_name']  # 过滤器
+	    search_fields = ['g_name']  # 搜索栏
+	    list_per_page = 5
+	    # 明细页面属性，单击add按钮后出现的页面
+	    # fields = ['g_girl_num', 'g_boy_num', 'g_name', 'g_date', 'is_delete']  # 修改了页面的显示顺序
+	    fieldsets = [
+	        ('num', {"fields": ['g_girl_num', 'g_boy_num']}),
+	        ('base', {"fields": ['g_name', 'g_date', 'is_delete']}),
+	    ]  # 分组显示
+	    # 注意 fields与fieldsets同一时间只能使用一种
+	
+	admin.site.register(Grade, GradeAdmin)
+	# 这里添加了 GradeAdmin
+  
+之后，重写学生页。
+  
+	class StudentAdmin(admin.ModelAdmin):
+	    list_display = ['pk', 's_name', 's_gender', 's_age', 's_contend', 's_grade', 'is_delete']
+	    list_filter = ['s_gender']
+	    search_fields = ['s_name']
+	    list_per_page = 10
+	    fields = ['s_name', 's_grade', 's_age', 's_gender', 's_contend', 'is_delete']
+	
+	admin.site.register(Student, StudentAdmin)
+  
+最后，重写二级目录 myApp 目录下 models.py 中的班级类和学生类。
+  
+	class Grade(models.Model):
+	    g_name = models.CharField(max_length=20)
+	    g_date = models.DateTimeField()
+	    g_girl_num = models.IntegerField()
+	    g_boy_num = models.IntegerField()
+	    is_delete = models.BooleanField(default=False)
+	    def __str__(self):
+	        return self.g_name
+	
+	class Student(models.Model):
+	    s_name = models.CharField(max_length=20)
+	    s_gender = models.BooleanField(default=True)
+	    s_age = models.IntegerField()
+	    s_contend = models.CharField(max_length=40)
+	    # 关联外键
+	    s_grade = models.ForeignKey("Grade", on_delete=models.CASCADE)
+	    is_delete = models.BooleanField(default=False)
+	    def __str__(self):
+	        return self.s_name
+  
+在创建班级时，实现可以直接添加学生。实现此功能需要继承 TabularInline，并进行关联。
+  
+	class GradeInit(admin.TabularInline):
+	    model = Student
+	    extra = 3
+	    # 在新建班级的同时，新增3个学生
+	
+	class GradeAdmin(admin.ModelAdmin):
+	    # 进行关联
+	    inlines = [GradeInit]
+	
+	    # 列表页面属性
+	    list_display = ['pk', 'g_name', 'g_date', 'g_girl_num', 'g_boy_num', 'is_delete']
+	    list_filter = ['g_name']  # 过滤器
+	    search_fields = ['g_name']  # 搜索栏
+	    list_per_page = 5
+	
+	    # 明细页面属性，单击add按钮后出现的页面
+	    # fields = ['g_girl_num', 'g_boy_num', 'g_name', 'g_date', 'is_delete']  # 修改了页面的显示顺序
+	    fieldsets = [
+	        ('num', {"fields": ['g_girl_num', 'g_boy_num']}),
+	        ('base', {"fields": ['g_name', 'g_date', 'is_delete']}),
+	    ]  # 分组显示
+	    # 注意 fields与fieldsets同一时间只能使用一种
+  
+重写布尔值返回值。实现此需求，首先需要新建函数 bool\_s\_gender()，之后需要将此函数传入 list\_display，最后可以用 short\_description 方法修改字段在页面上的显示。
+  
+	class StudentAdmin(admin.ModelAdmin):
+	    # 新建函数 bool_s_gender()
+	    def bool_s_gender(self):
+	        if self.s_gender:
+	            return "Male"
+	        else:
+	            return "Female"
+
+		bool_s_gender.short_description = "性别"
+
+	    # 传入函数 bool_s_gender
+	    list_display = ['pk', 's_name', bool_s_gender, 's_age', 's_contend', 's_grade', 'is_delete']
+	    list_filter = ['s_grade']
+	    search_fields = ['s_name']
+	    list_per_page = 10
+	    fields = ['s_name', 's_grade', 's_age', 's_gender', 's_contend', 'is_delete']
+  
+### 使用装饰器进行页面注册
+  
+未成功，以下代码出错
+  
+	@admin.register(Student)
+	class StudentAdmin(admin.ModelAdmin):
+	    # 新建函数 bool_s_gender()
+	    def bool_s_gender(self):
+	        if self.s_gender:
+	            return "Male"
+	        else:
+	            return "Female"
+	
+	    bool_s_gender.short_description = "性别"
+	
+	    # 传入函数 bool_s_gender
+	    list_display = ['pk', 's_name', bool_s_gender, 's_age', 's_contend', 's_grade', 'is_delete']
+	    list_filter = ['s_grade']
+	    search_fields = ['s_name']
+	    list_per_page = 10
+	    fields = ['s_name', 's_grade', 's_age', 's_gender', 's_contend', 'is_delete']
+	
+	# admin.site.register(Student, StudentAdmin)
