@@ -56,6 +56,8 @@ python 3.4.3
   
 配置 ldap server，执行命令：
   
+	sudo dpkg-reconfigure slapd
+  
 	Q1：If you enable this option, no initial configuration or database will be created for you. 
 	Omit OpenLDAP server configuration?
 	如果启用此选项，则不会为您创建初始配置或数据库。
