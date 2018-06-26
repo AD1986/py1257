@@ -204,12 +204,36 @@ python 3.4.3
 	file_copy.py
 	file_comparison_add_dup_line.py
 	file_comparison_add_diff_line.py
+	file_ftp_download.py
 
 	以及“对文件最后一行”的处理函数
 	file_last_line.py
   
 另外需要说明的是，时间仓促，边学边写，所以代码质量不高。
   
+## 0x07 python 预处理程序部署
+  
+设置时钟同步
+  
+	sudo crontab -e
+	# 文件结尾处添加，每20分钟同步一次
+	*/20 * * * * /usr/sbin/ntpdate 114.114.114.114 >/dev/null 2>&1
+	:wq
+  
+取消 sudo 的交互式密码
+  
+	sudo vi /etc/sudoers
+	# 文件结尾处添加
+	ubuntu ALL=NOPASSWD:ALL
+	:wq!
+  
+定时执行 python 程序
+  
+	crontab -e
+	# 文件结尾处添加，每天早上7点30分执行一次，并将日志写入 logs/log
+	30 7 * * * python3 /home/ubuntu/ldap_main.py >>/home/ubuntu/logs/log
+	:wq
+  
 >Author:AD1986
 >  
->Date:20180623
+>Date:20180626

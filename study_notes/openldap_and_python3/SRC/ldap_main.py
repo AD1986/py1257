@@ -5,7 +5,7 @@
 作者：杨超
 日期：2018-06-07
 * 文件名称：ldap_main.py
-* 功能说明：实现README.vsd中的功能
+* 功能说明：实现ldap.vsd中的功能
 * 生成文件：
 """
 
@@ -13,6 +13,7 @@ import os
 import time
 import sys
 
+import file_ftp_download
 import file_util
 import file_del_duplicate_line
 import file_dos2unix
@@ -51,8 +52,9 @@ def time_now():
     return t
 
 
-def date_now():
+def date_yest():
     d = time.strftime('%Y%m%d', time.localtime(time.time()))
+    d = str(int(d)-1)
     return d
 
 
@@ -67,11 +69,29 @@ def make_dir(path):
         return False
 
 
-def hr_txt_pretreatment(today):
+def ftp_download_file(yestoday):
     # 拼接出 HRyymmdd.txt 的绝对路径
-    hr_txt_base_dir = os.path.join(os.getcwd(), hr_txt_base_name + today + '.txt')
+    hr_txt_base_dir = os.path.join(os.getcwd(), hr_txt_base_name + yestoday + '.txt')
+    # 拼接出 remote_file_path 和 remote_file_name
+    remote_file_path = 'openldap'
+    remote_file_name = hr_txt_base_name + yestoday + '.txt'
+
+    is_exists = os.path.exists(hr_txt_base_dir)
+    if is_exists:
+        os.remove(hr_txt_base_dir)
+
+    ftp_ip = '*.*.2.8'
+    ftp_username = '**yourpasswd'
+    ftp_password = '**yourpasswd'
+    file_ftp_download.ftp_download(ftp_ip, ftp_username, ftp_password, hr_txt_base_dir, remote_file_path,
+                                   remote_file_name)
+
+
+def hr_txt_pretreatment(yestoday):
+    # 拼接出 HRyymmdd.txt 的绝对路径
+    hr_txt_base_dir = os.path.join(os.getcwd(), hr_txt_base_name + yestoday + '.txt')
     # 拼接出 HRtmpyymmdd.txt 的绝对路径，该文件在yymmddtmp目录中
-    hr_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', hr_tmp_txt_base_name + today + '.txt')
+    hr_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', hr_tmp_txt_base_name + yestoday + '.txt')
 
     is_exists = os.path.exists(hr_txt_base_dir)
     if is_exists:
@@ -91,15 +111,16 @@ def hr_txt_pretreatment(today):
                                      dict_fields.get("description")).replace('\"', '') + "\n")
 
     else:
-        print('i can\'t find HR' + today + ' in the root directory, please check the file status.')
+        # 文件日志改造中
+        print('i can\'t find HR' + yestoday + ' in the root directory, please check the file status.')
         sys.exit()
 
 
-def dp_txt_pretreatment(today):
+def dp_txt_pretreatment(yestoday):
     # 拼接出 HRtmpyymmdd.txt 的绝对路径，该文件在yymmddtmp目录中
-    hr_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', hr_tmp_txt_base_name + today + '.txt')
+    hr_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', hr_tmp_txt_base_name + yestoday + '.txt')
     # 拼接出 DPtmpyymmdd.txt 的绝对路径，该文件在yymmddtmp目录中
-    dp_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', dp_tmp_txt_base_name + today + '.txt')
+    dp_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', dp_tmp_txt_base_name + yestoday + '.txt')
 
     list_schema = ["ou", "physicalDeliverOfficeName", "cn", "sn", "description"]
     """
@@ -118,7 +139,7 @@ def dp_txt_pretreatment(today):
     file_del_duplicate_line.file_del_dup_line(dp_tmp_txt_base_dir)
 
 
-def wb_txt_pretreatment(today):
+def wb_txt_pretreatment(yestoday):
     # 拼接出 WB.txt 的绝对路径
     wb_txt_base_dir = os.path.join(os.getcwd(), wb_txt_base_name + '.txt')
     # 进行文件的格式转换，转换后的文件名为"原文件名.doc"
@@ -127,7 +148,7 @@ def wb_txt_pretreatment(today):
     wb_txt_dos_dir = wb_txt_base_dir + '.dos'
 
     # 拼接出 WBtmpyymmdd.txt 的绝对路径，该文件在yymmddtmp目录中
-    wb_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', wb_tmp_txt_base_name + today + '.txt')
+    wb_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', wb_tmp_txt_base_name + yestoday + '.txt')
     list_schema = ["ou", "physicalDeliverOfficeName", "cn", "sn", "description", "st", "title", "l"]
     """
     先判断是否存在 wb_tmp_txt_base_dir ，若存在，则先删除 wb_tmp_txt_base_dir ，再执行有效期判定与写入工作
@@ -138,7 +159,7 @@ def wb_txt_pretreatment(today):
 
     for fields in file_util.FileUtil.read_file_data(wb_txt_dos_dir):
         dict_fields = file_util.FileUtil.map_fields_list_schema(fields, list_schema)
-        if int(dict_fields.get("l")) >= int(today):
+        if int(dict_fields.get("l")) >= int(yestoday):
             # 将未过期的条目写入 WBtmpyymmdd.txt
             with open(wb_tmp_txt_base_dir, 'a', encoding='utf-8') as f_tmp:
                 f_tmp.writelines(str(dict_fields.get("ou") + ',' + dict_fields.get("physicalDeliverOfficeName") + ',' +
@@ -146,12 +167,12 @@ def wb_txt_pretreatment(today):
                                      dict_fields.get("description")) + "\n")
 
 
-def wbdp_txt_pretreatment(today):
+def wbdp_txt_pretreatment(yestoday):
     # 拼接出 WBtmpyymmdd.txt 的绝对路径，该文件在yymmddtmp目录中
-    wb_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', wb_tmp_txt_base_name + today + '.txt')
+    wb_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', wb_tmp_txt_base_name + yestoday + '.txt')
 
     # 拼接出 WBDPtmpyymmdd.txt 的绝对路径，该文件在yymmddtmp目录中
-    wbdp_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', wbdp_tmp_txt_base_name + today + '.txt')
+    wbdp_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', wbdp_tmp_txt_base_name + yestoday + '.txt')
     list_schema = ["ou", "physicalDeliverOfficeName", "cn", "sn", "description"]
 
     """
@@ -171,31 +192,31 @@ def wbdp_txt_pretreatment(today):
     file_del_duplicate_line.file_del_dup_line(wbdp_tmp_txt_base_dir)
 
 
-def dp_new_txt_pretreatment(today):
+def dp_new_txt_pretreatment(yestoday):
     # 拼接出 DPnew.txt 的绝对路径，该文件在 process 目录中
     dp_new_base_txt_dir = os.path.join(os.getcwd(), 'process', dp_new_txt_base_name + '.txt')
     # 拼接出 DPtmpyymmdd.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    dp_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', dp_tmp_txt_base_name + today + '.txt')
+    dp_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', dp_tmp_txt_base_name + yestoday + '.txt')
     # 拼接出 WBDPtmpyymmdd.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    wbdp_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', wbdp_tmp_txt_base_name + today + '.txt')
+    wbdp_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', wbdp_tmp_txt_base_name + yestoday + '.txt')
 
     # 拼接文件
     file_merge.file_merge(dp_tmp_txt_base_dir, wbdp_tmp_txt_base_dir, dp_new_base_txt_dir)
 
 
-def hr_new_txt_pretreatment(today):
+def hr_new_txt_pretreatment(yestoday):
     # 拼接出 HRnew.txt 的绝对路径，该文件在 process 目录中
     hr_new_base_txt_dir = os.path.join(os.getcwd(), 'process', hr_new_txt_base_name + '.txt')
     # 拼接出 HRtmpyymmdd.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    hr_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', hr_tmp_txt_base_name + today + '.txt')
+    hr_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', hr_tmp_txt_base_name + yestoday + '.txt')
     # 拼接出 WBtmpyymmdd.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    wb_tmp_txt_base_dir = os.path.join(os.getcwd(), today + 'tmp', wb_tmp_txt_base_name + today + '.txt')
+    wb_tmp_txt_base_dir = os.path.join(os.getcwd(), yestoday + 'tmp', wb_tmp_txt_base_name + yestoday + '.txt')
 
     # 拼接文件
     file_merge.file_merge(hr_tmp_txt_base_dir, wb_tmp_txt_base_dir, hr_new_base_txt_dir)
 
 
-def file_process_txt_ldif(today):
+def file_process_txt_ldif(yestoday):
     # 拼接出 HRnew.txt 的绝对路径，该文件在 process 目录中
     hr_new_base_txt_dir = os.path.join(os.getcwd(), 'process', hr_new_txt_base_name + '.txt')
     # 拼接出 DPnew.txt 的绝对路径，该文件在 process 目录中
@@ -206,9 +227,9 @@ def file_process_txt_ldif(today):
     dp_bak_base_txt_dir = os.path.join(os.getcwd(), 'process', dp_bak_txt_base_name + '.txt')
 
     # 拼接出 HRyymmdd.txt 的绝对路径，该文件在 yymmdd 目录中
-    hr_everyday_txt_base_dir = os.path.join(os.getcwd(), today, hr_everyday_txt_base_name + today + '.txt')
+    hr_everyday_txt_base_dir = os.path.join(os.getcwd(), yestoday, hr_everyday_txt_base_name + yestoday + '.txt')
     # 拼接出 DPyymmdd.txt 的绝对路径，该文件在 yymmdd 目录中
-    dp_everyday_txt_base_dir = os.path.join(os.getcwd(), today, dp_everyday_txt_base_name + today + '.txt')
+    dp_everyday_txt_base_dir = os.path.join(os.getcwd(), yestoday, dp_everyday_txt_base_name + yestoday + '.txt')
 
     # 拼接出 DPadd.ldif 的绝对路径，该文件在 process 目录中
     add_tree_dp_ldif_dir = os.path.join(os.getcwd(), 'process', add_tree_dp_ldif_name)
@@ -220,17 +241,17 @@ def file_process_txt_ldif(today):
     del_tree_hr_ldif_dir = os.path.join(os.getcwd(), 'process', del_tree_hr_ldif_name)
 
     # 拼接出 DPdel.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    dp_del_base_txt_dir = os.path.join(os.getcwd(), today + 'tmp', dp_del_base_txt_name)
+    dp_del_base_txt_dir = os.path.join(os.getcwd(), yestoday + 'tmp', dp_del_base_txt_name)
     # 拼接出 DPadd.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    dp_add_base_txt_dir = os.path.join(os.getcwd(), today + 'tmp', dp_add_base_txt_name)
+    dp_add_base_txt_dir = os.path.join(os.getcwd(), yestoday + 'tmp', dp_add_base_txt_name)
     # 拼接出 HRdel.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    hr_del_base_txt_dir = os.path.join(os.getcwd(), today + 'tmp', hr_del_base_txt_name)
+    hr_del_base_txt_dir = os.path.join(os.getcwd(), yestoday + 'tmp', hr_del_base_txt_name)
     # 拼接出 HRadd.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    hr_add_base_txt_dir = os.path.join(os.getcwd(), today + 'tmp', hr_add_base_txt_name)
+    hr_add_base_txt_dir = os.path.join(os.getcwd(), yestoday + 'tmp', hr_add_base_txt_name)
     # 拼接出 DPtmp.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    dp_tmp_base_txt_dir = os.path.join(os.getcwd(), today + 'tmp', dp_tmp_base_txt_name)
+    dp_tmp_base_txt_dir = os.path.join(os.getcwd(), yestoday + 'tmp', dp_tmp_base_txt_name)
     # 拼接出 HRtmp.txt 的绝对路径，该文件在 yymmddtmp 目录中
-    hr_tmp_base_txt_dir = os.path.join(os.getcwd(), today + 'tmp', hr_tmp_base_txt_name)
+    hr_tmp_base_txt_dir = os.path.join(os.getcwd(), yestoday + 'tmp', hr_tmp_base_txt_name)
 
     # 核心函数功能，先复制
     file_copy.file_copy(dp_new_base_txt_dir, dp_everyday_txt_base_dir)
@@ -378,7 +399,7 @@ def file_process_txt_ldif(today):
         sys.exit()
 
 
-def shell_process_ldif(today):
+def shell_process_ldif(yestoday):
     # 拼接出 DPadd.ldif 的绝对路径，该文件在 process 目录中
     add_tree_dp_ldif_dir = os.path.join(os.getcwd(), 'process', add_tree_dp_ldif_name)
     # 拼接出 HRadd.ldif 的绝对路径，该文件在 process 目录中
@@ -416,35 +437,38 @@ def shell_process_ldif(today):
 def main():
 
     # 创建yymmdd与tmpyymmdd文件夹
-    make_dir(os.path.join(os.getcwd(), date_now()))
-    make_dir(os.path.join(os.getcwd(), date_now() + 'tmp'))
+    make_dir(os.path.join(os.getcwd(), date_yest()))
+    make_dir(os.path.join(os.getcwd(), date_yest() + 'tmp'))
 
     # 创建process文件夹
     make_dir(os.path.join(os.getcwd(), 'process'))
 
+    # 到ftp服务器中下载文件
+    ftp_download_file(date_yest())
+
     # 生成 HRtmpyymmdd.txt
-    hr_txt_pretreatment(date_now())
+    hr_txt_pretreatment(date_yest())
 
     # 生成 DPtmpyymmdd.txt
-    dp_txt_pretreatment(date_now())
+    dp_txt_pretreatment(date_yest())
 
     # 生成 WBtmpyymmdd.txt
-    wb_txt_pretreatment(date_now())
+    wb_txt_pretreatment(date_yest())
 
     # 生成 WBDPtmpyymmdd.txt
-    wbdp_txt_pretreatment(date_now())
+    wbdp_txt_pretreatment(date_yest())
 
     # 对 DPtmpyymmdd.txt WBDPtmpyymmdd 进行文件合并,形成 DPnew.txt
-    dp_new_txt_pretreatment(date_now())
+    dp_new_txt_pretreatment(date_yest())
 
     # 对 HRtmpyymmdd WBtmpyymmdd 进行文件合并,形成 HRnew.txt
-    hr_new_txt_pretreatment(date_now())
+    hr_new_txt_pretreatment(date_yest())
 
     # 核心处理函数，详细处理流程请见 README
-    file_process_txt_ldif(date_now())
+    file_process_txt_ldif(date_yest())
 
     # 调用 shell 进行 openldap 更新
-    shell_process_ldif(date_now())
+    shell_process_ldif(date_yest())
 
 
 if __name__ == '__main__':
